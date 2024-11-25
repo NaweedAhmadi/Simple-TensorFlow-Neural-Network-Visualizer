@@ -15,7 +15,7 @@ An interactive web app that visualizes a simple neural network model built with 
 ## How to Run
 1. Clone this repository to your local machine:
     ```bash
-    git clone https://github.com/yourusername/your-repo-name.git
+    git clone https://github.com/NaweedAhmadi/Simple-TensorFlow-Neural-Network-Visualizer.git
     ```
 2. Open the `index.html` file in your web browser to view the interactive model.
 3. Use the slider to change the input value and observe how the model's prediction updates on the chart.
