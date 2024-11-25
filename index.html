@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Load TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js"></script>
+    <!-- Load Chart.js for graph visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+
+        .chart-container {
+            width: 50%;
+            height: 400px;
+        }
+
+        #output_field {
+            margin-top: 20px;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        /* Style for the slider input */
+        #xValueSlider {
+            width: 50%;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="output_field">Prediction for input 20:  </div>
+
+    <!-- Slider for dynamically changing the xValue -->
+    <input type="range" id="xValueSlider" min="1" max="50" value="20" step="1">
+    <label for="xValueSlider">Change xValue</label>
+
+    <!-- Container for the canvas -->
+    <div class="chart-container">
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <script>
+        let chartInstance = null; // Store the chart instance
+
+        async function learnLinear(xValue) {
+            const model = tf.sequential();
+            model.add(tf.layers.dense({units: 1, inputShape: [1]}));
+
+            model.compile({
+                loss: 'meanSquaredError',
+                optimizer: 'sgd'
+            });
+
+            const xs = tf.tensor2d([-1, 0, 1, 2, 3, 4], [6, 1]);
+            const ys = tf.tensor2d([-3, -1, 1, 3, 5, 7], [6, 1]);
+
+            // Train the model
+            await model.fit(xs, ys, {epochs: 250});
+
+            // Make a prediction for the provided x value
+            const prediction = model.predict(tf.tensor2d([xValue], [1, 1]));
+            const predictedValue = prediction.dataSync()[0];
+
+            // Display the result for the given x value
+            document.getElementById('output_field').innerText = `Prediction for input ${xValue}: ${predictedValue}`;
+
+            // Determine the extended range of xs from -1 to the new x value
+            const extendedXs = Array.from({length: xValue + 2}, (_, i) => i - 1);  // Generate xs from -1 to xValue
+
+            // Get the true ys and predicted ys for the extended xs range
+            const ysData = ys.dataSync();
+            const predictedYs = extendedXs.map(x => model.predict(tf.tensor2d([x], [1, 1])).dataSync()[0]);
+
+            // Prepare data for the chart
+            const chartData = {
+                labels: extendedXs,  // x-axis (extended input values from -1 to xValue)
+                datasets: [
+                    {
+                        label: 'True values (ys)',
+                        data: Array.from(ysData),  // y-axis (true output values)
+                        borderColor: 'blue',
+                        fill: false,
+                        pointBackgroundColor: 'blue', // Blue points
+                        borderWidth: 2,
+                        pointRadius: 5
+                    },
+                    {
+                        label: 'Predicted values',
+                        data: predictedYs,  // y-axis (predicted output values for extended xs)
+                        borderColor: 'red',
+                        fill: false,
+                        pointBackgroundColor: 'red', // Red points
+                        borderWidth: 2,
+                        pointRadius: 5
+                    }
+                ]
+            };
+
+            // If chart already exists, destroy and recreate it
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            // Create the chart
+            const ctx = document.getElementById('myChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',  // Line chart
+                data: chartData,
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Input (xs)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Output (ys)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Event listener for the slider to change xValue dynamically
+        document.getElementById('xValueSlider').addEventListener('input', function() {
+            const xValue = parseInt(this.value, 10); // Get the value from the slider
+            learnLinear(xValue);
+        });
+
+        // Initial call to render the chart with default xValue
+        learnLinear(20);
+    </script>
+</body>
+</html>
